@@ -4,7 +4,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { VRButton } from "three/examples/jsm/webxr/VRButton.js";
 import { XRControllerModelFactory } from "three/examples/jsm/webxr/XRControllerModelFactory.js";
 
-let controller, controllerGrip;
+let controls, controller, controllerGrip;
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -124,24 +124,6 @@ window.addEventListener("dblclick", () => {
 });
 
 /**
- * Camera
- */
-// Base camera
-const camera = new THREE.PerspectiveCamera(
-  75,
-  sizes.width / sizes.height,
-  0.1,
-  100
-);
-camera.position.set(4, 2, 5);
-
-scene.add(camera);
-
-// Controls
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true;
-
-/**
  * Renderer
  */
 const renderer = new THREE.WebGLRenderer({
@@ -159,22 +141,47 @@ renderer.xr.enabled = true;
 controller = renderer.xr.getController(0);
 controller.addEventListener("selectstart", onSelectStart);
 controller.addEventListener("selectend", onSelectEnd);
+
 controller.addEventListener("connected", function (event) {
+  console.log("controller added", event.data);
   this.add(buildController(event.data));
 });
 controller.addEventListener("disconnected", function () {
   this.remove(this.children[0]);
 });
+controller.position.set(4, 2, 5);
 
-scene.add(controller);
+/**
+ * Camera
+ */
+// Base camera
+const camera = new THREE.PerspectiveCamera(
+  75,
+  sizes.width / sizes.height,
+  0.1,
+  100
+);
+camera.position.set(0, 2, 3);
 
 const controllerModelFactory = new XRControllerModelFactory();
-
 controllerGrip = renderer.xr.getControllerGrip(0);
 controllerGrip.add(
   controllerModelFactory.createControllerModel(controllerGrip)
 );
-scene.add(controllerGrip);
+
+// Controls
+controls = new OrbitControls(camera, canvas);
+
+controls.target.set(0, 0, 0);
+
+var cameraRig = new THREE.Group();
+cameraRig.add(camera);
+cameraRig.add(controller);
+cameraRig.position.set(0, 1, 3);
+cameraRig.add(controllerGrip);
+scene.add(cameraRig);
+
+console.log(cameraRig);
 
 function onSelectStart() {
   this.userData.isSelecting = true;
@@ -221,6 +228,7 @@ renderer.xr.addEventListener("sessionstart", () => {
 
   renderer.xr.getCamera().lookAt(camera.position);
   console.log(camera.position, renderer.xr.getCamera().position);
+  console.log(controller);
 });
 
 /**
